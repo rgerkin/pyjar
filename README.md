@@ -1,2 +1,2 @@
 # pyjar
-Experiments with Jars
+Code for Jar Olfactometry
