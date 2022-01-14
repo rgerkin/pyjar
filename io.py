@@ -4,6 +4,8 @@ from pathlib import Path
 import pyairtable as air
 import shelve
 
+ROOT_PATH = Path('/srv/jar-experiments')
+
 def get_airtable_key():
     with open('/srv/jar-experiments/atk.txt', 'r') as f:
         x = f.read()
@@ -11,7 +13,7 @@ def get_airtable_key():
 
 ATK = get_airtable_key()
 
-DATA_PATH = Path(__file__).parent.parent / 'data'
+DATA_PATH = ROOT_PATH / 'data'
 DB_PATH = str(DATA_PATH / 'results.db')
 SM_PATH = str(DATA_PATH / 'slotmap.db')
 
@@ -47,7 +49,7 @@ def write_result(result, target='local+airtable'):
         table = air.Table(ATK, 'appJrRwCJcKjbmLwW', 'Jar Results')
         table.create(value)
         
-def read_slotmap(source='local', key=None):
+def read_slotmap(source='local', key=None, reverse=False):
     if source == 'local':
         with shelve.open(SM_PATH) as f:
             if len(f):
@@ -55,6 +57,8 @@ def read_slotmap(source='local', key=None):
                 slot_map = f[latest_key]
             else:
                 slot_map = {}
+    if reverse:
+        slot_map = {v: k for k, v in slot_map.items()}
     return slot_map
 
 def get_slotmap_seeds():
@@ -83,3 +87,15 @@ def barcode_to_jar_id(inventory, barcode):
     except:
         jar_id = ''
     return jar_id
+
+def get_jar_by_record(record, inventory):
+    jars = [x for x in inventory if x['id']==record]
+    assert len(jars)==1
+    fields = jars[0]['fields']
+    try:
+        cid = fields["CID (from Chemical Stock)"][0]
+        concentration = fields['Concentration']
+    except:
+        cid = 0
+        concentration = 'Solvent'
+    return cid, concentration
